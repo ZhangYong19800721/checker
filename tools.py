@@ -341,19 +341,20 @@ def readRawData(filename, rowid=None):
         text = removeHTMLtag(text)  # 去除文本中的HTML标签
         text = removeSpecialChar(text)  # 去除一些特殊字符
         info = extractTextInfo(text)  # 从文本中抽取结构化信息
-        if label == 2 or label == 6:
-            info['label'] = 'pass'  # 标签为2或6表示审核通过
-        elif label == 3 or label == 4:
-            info['label'] = 'reject'  # 标签为3或4表示审核拒绝
-        elif label == 1 or label == 5:
-            info['label'] = 'waiting'  # 标签为1或5表示待审
-        else:
-            info['label'] = 'unknown'  # 其它标签未知
-        info['keywords'] = keywords.split()  # 将关键词字符串按照空格分隔为多个关键词列表
-        info['row_id'] = i
-        info['filename'] = filename
-
-        result.append(info)
+        print(f"filename = {filename}, rowid = {i}")
+        if info:
+            if label == 2 or label == 6:
+                info['label'] = 'pass'  # 标签为2或6表示审核通过
+            elif label == 3 or label == 4:
+                info['label'] = 'reject'  # 标签为3或4表示审核拒绝
+            elif label == 1 or label == 5:
+                info['label'] = 'waiting'  # 标签为1或5表示待审
+            else:
+                info['label'] = 'unknown'  # 其它标签未知
+            info['keywords'] = keywords.split()  # 将关键词字符串按照空格分隔为多个关键词列表
+            info['row_id'] = i
+            info['filename'] = filename
+            result.append(info)
 
     return result
 

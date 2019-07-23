@@ -4,13 +4,13 @@ import random
 import tools
 import pyltp
 
-model_path = r'F:\workspace3\ltp_data_v3.4.0\cws.model'
-user_dict = r'F:\workspace3\ltp_data_v3.4.0\userdict.txt'
+model_path = r'D:\FTPROOT\workspace3\ltp_data_v3.4.0\cws.model'
+user_dict = r'D:\FTPROOT\workspace3\ltp_data_v3.4.0\userdict.txt'
 segmentor = pyltp.Segmentor()
 segmentor.load_with_lexicon(model_path, user_dict)
 
 corpus = []
-file_name_template = r"F:\workspace3\data\data{}.xlsx"
+file_name_template = r"D:\FTPROOT\workspace3\data\data{}.xlsx"
 for n in range(1, 10 + 1):
     file_name = file_name_template.format(n)
     data_part = tools.readRawData(file_name)  # 获取数据
