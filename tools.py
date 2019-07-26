@@ -70,16 +70,6 @@ def removeSpecialChar(text):
     new_text = re.sub(r"\u2215", "/", new_text)  #
     new_text = re.sub(r"\u2219", ".", new_text)  #
     new_text = re.sub(r"\u2236", ":", new_text)  #
-    new_text = re.sub(r"\u2776", "(1)", new_text)
-    new_text = re.sub(r"\u2777", "(2)", new_text)
-    new_text = re.sub(r"\u2778", "(3)", new_text)
-    new_text = re.sub(r"\u2779", "(4)", new_text)
-    new_text = re.sub(r"\u277a", "(5)", new_text)
-    new_text = re.sub(r"\u277b", "(6)", new_text)
-    new_text = re.sub(r"\u277c", "(7)", new_text)
-    new_text = re.sub(r"\u277d", "(8)", new_text)
-    new_text = re.sub(r"\u277e", "(9)", new_text)
-    new_text = re.sub(r"\u277f", "(10)", new_text)
     new_text = re.sub(r"\u2460", "(1)", new_text)  #
     new_text = re.sub(r"\u2461", "(2)", new_text)  #
     new_text = re.sub(r"\u2462", "(3)", new_text)  #
@@ -140,7 +130,17 @@ def removeSpecialChar(text):
     new_text = re.sub(r"\u2499", "(18)", new_text)
     new_text = re.sub(r"\u249a", "(19)", new_text)
     new_text = re.sub(r"\u249b", "(20)", new_text)
-    new_text = re.sub(r"\u2500", "—", new_text)  #
+    new_text = re.sub(r"\u2500", "—", new_text)
+    new_text = re.sub(r"\u2776", "(1)", new_text)
+    new_text = re.sub(r"\u2777", "(2)", new_text)
+    new_text = re.sub(r"\u2778", "(3)", new_text)
+    new_text = re.sub(r"\u2779", "(4)", new_text)
+    new_text = re.sub(r"\u277a", "(5)", new_text)
+    new_text = re.sub(r"\u277b", "(6)", new_text)
+    new_text = re.sub(r"\u277c", "(7)", new_text)
+    new_text = re.sub(r"\u277d", "(8)", new_text)
+    new_text = re.sub(r"\u277e", "(9)", new_text)
+    new_text = re.sub(r"\u277f", "(10)", new_text)
     new_text = re.sub(r"\u2f00", "一", new_text)
     new_text = re.sub(r"\u2f08", "人", new_text)  #
     new_text = re.sub(r"\u2f09", "儿", new_text)
@@ -161,6 +161,16 @@ def removeSpecialChar(text):
     new_text = re.sub(r"\u30cb", "二", new_text)
     new_text = re.sub(r"\u30fb", "*", new_text)
     new_text = re.sub(r"\u30fc", "一", new_text)  #
+    new_text = re.sub(r"\u3220", "(1)", new_text)
+    new_text = re.sub(r"\u3221", "(2)", new_text)
+    new_text = re.sub(r"\u3222", "(3)", new_text)
+    new_text = re.sub(r"\u3223", "(4)", new_text)
+    new_text = re.sub(r"\u3224", "(5)", new_text)
+    new_text = re.sub(r"\u3225", "(6)", new_text)
+    new_text = re.sub(r"\u3226", "(7)", new_text)
+    new_text = re.sub(r"\u3227", "(8)", new_text)
+    new_text = re.sub(r"\u3228", "(9)", new_text)
+    new_text = re.sub(r"\u3229", "(10)", new_text)
     new_text = re.sub(r"\u3251", "(21)", new_text)  #
     new_text = re.sub(r"\u3252", "(22)", new_text)  #
     new_text = re.sub(r"\u3253", "(23)", new_text)  #
@@ -379,22 +389,6 @@ def segmentRefine_Digit(wordsList):
     return refineList
 
 
-# 精细化调整分词的结果，对罗马数字进行更多的处理
-# def segmentRefine_RomeDigit(wordsList):
-#     re_pattern_rome_digit = r"[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]+"
-#     refineList = []
-#     for word in wordsList:
-#         flag = re.match(re_pattern_rome_digit, word)
-#         if flag:
-#             split_words = re.split(r"([ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ])", word)
-#             for x in split_words:
-#                 refineList += x.split()
-#         else:
-#             refineList.append(word)
-#     refineList = [x for x in refineList if x != ""]
-#     return refineList
-
-
 # 精细化调整分词的结果，对中文数字进行更多的处理
 def segmentRefine_ChineseDigit(wordsList):
     re_pattern_y = r"\b[零一二三四五六七八九十]{1,4}年\b"
@@ -434,22 +428,23 @@ def segmentRefine_English(wordsList):
 PAD_token = 0  # 用于对短句进行补零
 SOS_token = 1  # 开始标记
 EOS_token = 2  # 结束标记
+UNKNOWN_token = 3  # 未知标记（用来标记未知符号）
 
 
 class Vocabulary:
     def __init__(self, name):
         self.name = name
         self.trimmed = False
-        self.word2index = {}
-        self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS"}
-        self.num_words = 3  # 初始词汇量为3个词：SOS, EOS, PAD
+        self.word2index = {"PAD": PAD_token, "SOS": SOS_token, "EOS": EOS_token, "UNKNOWN": UNKNOWN_token}  # 从词到索引的映射
+        self.word2count = {"PAD": 0, "SOS": 0, "EOS": 0, "UNKNOWN": 0}  # 词的计数
+        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNKNOWN_token: "UNKNOWN"}  # 从索引到词的映射
+        self.num_words = 4  # 初始词汇量为4个词：PAD, SOS, EOS, UNKNOWN
 
-    def addSentence(self, sentence):
-        for word in sentence:
+    def addArticle(self, article):  # 将文章中的词加到词汇表中
+        for word in article:
             self.addWord(word)
 
-    def addWord(self, word):
+    def addWord(self, word):  # 将词和字加到词汇表中
         if word not in self.word2index:
             self.word2index[word] = self.num_words
             self.word2count[word] = 1
@@ -458,7 +453,11 @@ class Vocabulary:
         else:
             self.word2count[word] += 1
 
-    # 去除出现次数低于min_count的词
+        if len(word) > 1:
+            for n in range(len(word)):
+                self.addWord(word[n])
+
+    # 去除词频低于min_count的词
     def trim(self, min_count):
         if self.trimmed:
             return
@@ -470,21 +469,18 @@ class Vocabulary:
             if v >= min_count:
                 keep_words.append(k)
 
-        print('keep_words {} / {} = {:.4f}'.format(len(keep_words), len(self.word2index),
-                                                   len(keep_words) / len(self.word2index)))
-
         # 重建词汇表
-        self.word2index = {}
-        self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS"}
-        self.num_words = 3  # 对默认标记进行计数
+        self.word2index = {"PAD": PAD_token, "SOS": SOS_token, "EOS": EOS_token, "UNKNOWN": UNKNOWN_token}  # 从词到索引的映射
+        self.word2count = {"PAD": 0, "SOS": 0, "EOS": 0, "UNKNOWN": 0}
+        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNKNOWN_token: "UNKNOWN"}  # 从索引到词的映射
+        self.num_words = 4  # 初始词汇量为4个词：PAD, SOS, EOS, UNKNOWN
 
         for word in keep_words:
             self.addWord(word)
 
 
 # 将语料库中出现次数低于min_count的多字词拆分为单字词
-def Trim(corpus_data, voc, min_count):
+def splitUncommonWord(corpus_data, voc, min_count):
     for x in corpus_data:
         wordList = []
         for word in x['body']:
@@ -495,3 +491,35 @@ def Trim(corpus_data, voc, min_count):
         x['body'] = [x for x in wordList if x != ""]
 
     return corpus_data
+
+
+# 根据语料库建立词汇表
+def establishVocabulary(corpus_data, name):
+    voc = Vocabulary(name)
+    for data in corpus_data:
+        voc.addArticle(data['body'])
+    return voc
+
+
+# 根据词汇表，将语料库中出现的未知词替换为UNKONWN
+def replaceUnknownWord(corpus_data, voc):
+    for data in corpus_data:
+        article = data['body']
+        article_updated = []
+        for word in article:
+            if word in voc.word2index:
+                article_updated.append(word)
+            else:
+                article_updated.append("UNKNOWN")
+        data['body'] = article_updated
+    return corpus_data
+
+# 将语料库转换为数字形式
+def transformCorpusToDigit(corpus, voc):
+    for data in corpus:
+        article = []
+        for word in data['body']:
+            article.append(voc.word2index[word])
+        article.append(voc.word2index["EOS"])
+        data['body'] = article
+    return corpus
