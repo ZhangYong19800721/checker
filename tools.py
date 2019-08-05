@@ -516,10 +516,17 @@ def replaceUnknownWord(corpus_data, voc):
 
 # 将语料库转换为数字形式
 def transformCorpusToDigit(corpus, voc):
+    digit_corpus = []
     for data in corpus:
         article = []
         for word in data['body']:
             article.append(voc.word2index[word])
         article.append(voc.word2index["EOS"])
-        data['body'] = article
-    return corpus
+        if data['label']=='pass':
+            label = 1
+        elif data['label']=='reject':
+            label = 0
+        else:
+            continue
+        digit_corpus.append({"article":article,"label":label})
+    return digit_corpus
