@@ -5,13 +5,13 @@ import tools
 import pyltp
 import pickle
 
-model_path = r'D:\FTPROOT\workspace3\ltp_data_v3.4.0\cws.model'
-user_dict = r'D:\FTPROOT\workspace3\ltp_data_v3.4.0\userdict.txt'
+model_path = r"./ltp_data_v3.4.0/cws.model"
+user_dict = r"./ltp_data_v3.4.0/userdict.txt"
 segmentor = pyltp.Segmentor()
 segmentor.load_with_lexicon(model_path, user_dict)
 
 corpus = []
-file_name_template = r"D:\FTPROOT\workspace3\data\data{}.xlsx"
+file_name_template = r"./data/data{}.xlsx"
 for n in range(1, 10 + 1):
     file_name = file_name_template.format(n)
     data_part = tools.readRawData(file_name)  # 获取数据
@@ -26,12 +26,12 @@ for n in range(1, 10 + 1):
     corpus += data_part
 
 voc = tools.establishVocabulary(corpus, "党员网语料库词汇表")  # 第1次建词汇表
-corpus = tools.splitUncommonWord(corpus, voc, 3)
-corpus_file = open(r"D:\FTPROOT\workspace3\data\corpus.cps", "wb")
+corpus = tools.splitUncommonWord(corpus, voc, 50)
+corpus_file = open(r"./data/corpus.cps", "wb")
 pickle.dump(corpus, corpus_file)
 
 voc = tools.establishVocabulary(corpus, "党员网语料库词汇表")  # 第2次建词汇表
-vocabulary_file = open(r"D:\FTPROOT\workspace3\data\vocabulary.voc", "wb")
+vocabulary_file = open(r"./data/vocabulary.voc", "wb")
 pickle.dump(voc, vocabulary_file)
 vocabulary_file.close()
 
