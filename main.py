@@ -18,22 +18,23 @@ voc = pickle.load(voc_file)
 voc_file.close()
 
 trainset = DATASET.GCDYW(r"./data/corpus_trainset_part1_digit.cps")  # 加载训练数据
-dataloader = DATASET.LOADER(trainset, batch_size=20)  # 数据加载器，设定minibatch的大小
+dataloader = DATASET.LOADER(trainset, minibatch_size=20)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 128  # 词向量的维度
 hidden_size = 256
-encoder_n_layers = 2
+num_layers = 2
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
-model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, encoder_n_layers, 0.8)
+model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers)
 
 criterion = nn.CrossEntropyLoss()  # 目标函数CrossEntropy
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)  # 准备最优化算法SGD
+optimizer = optim.Adam(model.parameters())  # 准备最优化算法SGD
 
 start_time = time.time()
 model.to(device)  # 将模型推入GPU
 
-exponentiaAveLoss = 1
 lossList = []
+exponentiaAveLoss = 1
+
 minibatch_num = len(dataloader)
 for epoch in range(20):
     for minibatch_id in range(minibatch_num):

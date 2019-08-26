@@ -7,31 +7,27 @@ import time
 from DATASET_MNIST import *
 
 
-class RNN_MODEL(nn.Module):
+class GRU_MODEL(nn.Module):
 
-    def __init__(self, input_size, hidden_size, n_layers=1, dropout=0):
-        super(RNN_MODEL, self).__init__()
+    def __init__(self, input_dim, hidden_dim, num_layers=1, dropout=0):
+        super(GRU_MODEL, self).__init__()
 
-        self.n_layers = n_layers
-        self.hidden_size = hidden_size
-        self.dropout = 0 if n_layers == 1 else dropout  # 当只有1层的时候不做dropout，当层数大于1层时使用输入的dropout参数
+        self.num_layers = num_layers
+        self.hidden_dim = hidden_dim
+        self.dropout = 0 if num_layers == 1 else dropout  # 当只有1层的时候不做dropout，当层数大于1层时使用输入的dropout参数
 
-        # 初始化一个门单元GRU，输入维度input_size等于hidden_size，因为输入的是一个词向量，它的特征维度等于
-        # hidden_size，n_layers指定了层数，bidirectional=True指定了采用双向的GRU，
-        self.gru = nn.GRU(input_size, hidden_size, self.n_layers, dropout=self.dropout, bidirectional=True)
-
-        self.fc1 = nn.Linear(2 * hidden_size, hidden_size)  # gru的输出作为fc1的输入
-        self.fc2 = nn.Linear(hidden_size, 10)  # fc1的输出作为fc2的输入
+        self.gru = nn.GRU(input_dim, hidden_dim, num_layers=num_layers, dropout=self.dropout, bidirectional=True)
+        self.fc1 = nn.Linear(2 * hidden_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, 10)  # 全连接层
 
     def forward(self, input_seq, hidden=None):
         outputs_gru, hidden_gru = self.gru(input_seq, hidden)
-        x = outputs_gru[-1, :, :self.hidden_size]  # 正向GRU最后的输出
-        y = outputs_gru[+0, :, self.hidden_size:]  # 反向GRU最后的输出
+        x = outputs_gru[-1, :, :self.hidden_dim]  # 正向GRU最后的输出
+        y = outputs_gru[+0, :, self.hidden_dim:]  # 反向GRU最后的输出
         outputs_gru = torch.cat((x, y), 1)  # 将正向GRU末端的输出和反向GRU末端的输出拼接起来
-
         # 将GRU的输出送入一个全连接的Softmax判决层
         outputs = F.relu(self.fc1(outputs_gru))
-        outputs = F.softmax(self.fc2(outputs), dim=1)
+        outputs = self.fc2(outputs)
         return outputs
 
 
@@ -41,10 +37,10 @@ if __name__ == '__main__':
     # 如果GPU可用就使用GPU
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    input_size = 28
-    hidden_size = 256
+    input_dim = 28
+    hidden_dim = 512
     minibatch_size = 100
-    rnn_model = RNN_MODEL(input_size, hidden_size)  # 初始化一个RNN_MODEL的实例
+    gru_model = GRU_MODEL(input_dim, hidden_dim, num_layers=2)  # 初始化一个GRU_MODEL的实例
 
     # 加载MNIST训练数据
     trainset = TRAINSET("./data/mnist.mat")
@@ -54,9 +50,9 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     # 准备最优化算法
-    optimizer = optim.SGD(rnn_model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.Adam(gru_model.parameters())
 
-    rnn_model.to(device)
+    gru_model.to(device)
     aveloss = []
     for epoch in range(5):  # 对全部的训练数据进行n次遍历
         for minibatch_id in range(len(trainset_loader)):
@@ -64,7 +60,7 @@ if __name__ == '__main__':
             images = minibatch["image"].to(device)
             labels = minibatch["label"].to(device)
             optimizer.zero_grad()
-            output_data = rnn_model(images, hidden0)
+            output_data = gru_model(images)
             loss = criterion(output_data, labels)
             aveloss.append(loss.item())
             while len(aveloss) > len(trainset_loader):
@@ -87,7 +83,7 @@ if __name__ == '__main__':
             minibatch = testset_loader[minibatch_id]
             images = minibatch["image"].to(device)
             lables = minibatch["label"].numpy()
-            predict = rnn_model(images).to('cpu').numpy()
+            predict = gru_model(images).to('cpu').numpy()
             predict = np.argmax(predict, axis=1)
             error_count += np.sum((predict != lables) + 0.0)
 

@@ -32,16 +32,16 @@ class LOADER(object):
     数据加载器
     """
 
-    def __init__(self, dataset, batch_size=100):
+    def __init__(self, dataset, minibatch_size=100):
         self.dataset = dataset  # 数据集
-        self.batch_size = batch_size  # batch的大小
-        self.batch_numb = len(self.dataset) // self.batch_size  # batch的数量
+        self.minibatch_size = minibatch_size  # batch的大小
+        self.minibatch_num = len(self.dataset) // self.minibatch_size  # batch的数量
 
     def __len__(self):  # 返回batch的数量
-        return self.batch_numb
+        return self.minibatch_num
 
     def __getitem__(self, idx):
-        start, finish = self.batch_size * idx, self.batch_size * (idx + 1)
+        start, finish = self.minibatch_size * idx, self.minibatch_size * (idx + 1)
         minibatch = []
         for i in range(start, finish):
             minibatch.append(self.dataset[i])
