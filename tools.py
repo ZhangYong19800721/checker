@@ -1,6 +1,14 @@
 # coding=utf-8
 import re
 import xlrd  # 读取excel文件
+import itertools
+import torch  # 导入torch模块
+import torch.nn as nn  # 导入torch的神经网络模块
+from torch import optim  # 导入torch的最优化模块
+import torch.nn.functional as F  # 导入torch神经网络子模块的函数模块
+
+USE_CUDA = torch.cuda.is_available()
+device = torch.device("cuda" if USE_CUDA else "cpu")
 
 
 # 判断文本中是否包含附件
@@ -514,6 +522,7 @@ def replaceUnknownWord(corpus_data, voc):
         data['body'] = article_updated
     return corpus_data
 
+
 # 将语料库转换为数字形式
 def transformCorpusToDigit(corpus, voc):
     digit_corpus = []
@@ -522,11 +531,68 @@ def transformCorpusToDigit(corpus, voc):
         for word in data['body']:
             article.append(voc.word2index[word])
         article.append(voc.word2index["EOS"])
-        if data['label']=='pass':
+        if data['label'] == 'pass':
             label = 1
-        elif data['label']=='reject':
+        elif data['label'] == 'reject':
             label = 0
         else:
             continue
-        digit_corpus.append({"article":article,"label":label})
+        digit_corpus.append({"article": article, "label": label})
     return digit_corpus
+
+
+# 序列补零的同时时间序列变换为列方向（即行数小的词在前，行数大的词在后，每一列是一个句子）
+# L里面是若干个长度不同的序列（每一行表示一个句子，行方向为时间方向，即列代表不同的时间），将这些序列按顺序打包，
+# 长度不足的序列补零，直到长度与最长序列相同
+def zeroPadding(L, fillvalue=PAD_token):
+    # zip_longest函数返回的是一个迭代对象，使用list函数再将它转换为一个list
+    return list(itertools.zip_longest(*L, fillvalue=fillvalue))
+
+
+# L是一个二维矩阵，本函数根据L创建一个mask矩阵，mask矩阵的大小与L相同，
+# L中是PAD_token的位置mask中对应的位置为0，L中不是PAD_token的位置mask中对应的位置为1
+def binaryMask(L, value=PAD_token):
+    m = []
+    for i, seq in enumerate(L):
+        m.append([])
+        for token in seq:
+            if token == value:
+                m[i].append(0)
+            else:
+                m[i].append(1)
+    return m
+
+
+# L 是一个句子的二维列表，每一个行代表一篇文章，行方向是时间方向
+# 将多篇文章长度补零后转换为张量返回，同时将每篇文章的长度作为一个张量返回
+def transform2Tensor(L):
+    lengths = torch.tensor([len(article) for article in L])  # 记录每篇文章的长度
+    paddedList = zeroPadding(L)  # 长度不足的补零
+    paddedTensor = torch.tensor(paddedList)
+    return paddedTensor, lengths
+
+
+class EncoderRNN(nn.Module):  # 编码器GRU
+    def __init__(self, hidden_size, embedding, n_layers=1, dropout=0):
+        super(EncoderRNN, self).__init__()
+        self.n_layers = n_layers
+        self.hidden_size = hidden_size
+        self.embedding = embedding
+        # 初始化GRU, 输入维度 和 隐藏维度 都被设定为 hidden_size
+        # 经过词向量（embedding）之后特征的维度等于 hidden_size
+        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout),
+                          bidirectional=True)
+
+    def forward(self, input_seq, input_lengths, hidden=None):
+        # 使用词向量将词索引转换为词向量
+        embedded = self.embedding(input_seq)
+        # 将词向量打包
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
+        # 让数据正向通过GRU
+        outputs, hidden = self.gru(packed, hidden)
+        # 将输出解包
+        outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs)
+        # 将双向GRU的输出结果加起来
+        outputs = outputs[:, :, :self.hidden_size] + outputs[:, :, self.hidden_size:]
+        # 返回输出值和最终的隐藏状态
+        return outputs, hidden
