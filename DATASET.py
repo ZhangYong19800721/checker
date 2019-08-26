@@ -46,13 +46,11 @@ class LOADER(object):
         for i in range(start, finish):
             minibatch.append(self.dataset[i])
 
-        # minibatch.sort(key=lambda x: len(x['article']), reverse=True)  # 按照文章从长到短进行排序
-        # minibatch_articlelen = [len(x['article']) for x in minibatch]
         minibatch_article = [x['article'] for x in minibatch]
-        minibatch_article = tools.zeroPadding(minibatch_article) # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
+        minibatch_article = tools.zeroPadding(minibatch_article)  # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
         minibatch_label = [x['label'] for x in minibatch]
 
-        minibatch_article = torch.LongTensor(minibatch_article) # 将列表转换为张量
+        minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
         # minibatch_articlelen = torch.LongTensor(minibatch_articlelen)
         minibatch_label = torch.LongTensor(minibatch_label)
-        return {'article':minibatch_article, 'label':minibatch_label}
+        return {'article': minibatch_article, 'label': minibatch_label}
