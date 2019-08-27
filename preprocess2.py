@@ -1,7 +1,7 @@
 import pickle
 import random
 
-corpus_file = open(r"D:\FTPROOT\workspace3\data\corpus.cps", "rb")
+corpus_file = open(r"./data/corpus.cps", "rb")
 corpus = pickle.load(corpus_file)
 corpus_file.close()
 
@@ -23,8 +23,8 @@ random.shuffle(corpus_testset)
 corpus_trainset = corpus_positive_trainset + corpus_negative_trainset
 random.shuffle(corpus_trainset)
 
-corpus_trainset_file = open(r"D:\FTPROOT\workspace3\data\corpus_trainset.cps", "wb")
-corpus_testset_file = open(r"D:\FTPROOT\workspace3\data\corpus_testset.cps", "wb")
+corpus_trainset_file = open(r"./data/corpus_trainset.cps", "wb")
+corpus_testset_file = open(r"./data/corpus_testset.cps", "wb")
 pickle.dump(corpus_trainset, corpus_trainset_file)
 pickle.dump(corpus_testset, corpus_testset_file)
 corpus_trainset_file.close()

@@ -5,7 +5,7 @@ import random
 import tools
 
 # 读入训练集
-trainset_file = open(r"D:\FTPROOT\workspace3\data\corpus_trainset.cps", "rb")
+trainset_file = open(r"./data/corpus_trainset.cps", "rb")
 trainset = pickle.load(trainset_file)
 trainset_file.close()
 
@@ -30,9 +30,9 @@ random.shuffle(trainset_part1)
 random.shuffle(trainset_part2)
 random.shuffle(trainset_part3)
 
-trainset_part1_file = open(r"D:\FTPROOT\workspace3\data\corpus_trainset_part1.cps", "wb")
-trainset_part2_file = open(r"D:\FTPROOT\workspace3\data\corpus_trainset_part2.cps", "wb")
-trainset_part3_file = open(r"D:\FTPROOT\workspace3\data\corpus_trainset_part3.cps", "wb")
+trainset_part1_file = open(r"./data/corpus_trainset_part1.cps", "wb")
+trainset_part2_file = open(r"./data/corpus_trainset_part2.cps", "wb")
+trainset_part3_file = open(r"./data/corpus_trainset_part3.cps", "wb")
 pickle.dump(trainset_part1, trainset_part1_file)
 pickle.dump(trainset_part2, trainset_part2_file)
 pickle.dump(trainset_part3, trainset_part3_file)
