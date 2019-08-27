@@ -25,6 +25,9 @@ class GCDYW(object):
 
     def __getitem__(self, idx):
         return self.dataset[idx]
+    
+    def trim(self, minlen = 20, maxlen = 1000):
+        self.dataset = [x for x in self.dataset if minlen<=len(x['article']) and len(x['article'])<=maxlen]
 
 
 class LOADER(object):
