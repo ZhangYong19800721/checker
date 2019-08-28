@@ -26,9 +26,10 @@ dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据�
 embedding_dim = 100
 hidden_size = 800
 num_layers = 2
+dropout = 0.1
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
-model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers)
+model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
 
 criterion = nn.CrossEntropyLoss()  # 目标函数CrossEntropy
 optimizer = optim.Adam(model.parameters())  # 准备最优化算法SGD
@@ -57,6 +58,7 @@ for epoch in range(epoch_num):
         aveLoss = sum(lossList) / len(lossList)  # 计算平均损失函数
         print("epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, expAveLoss:%10.8f, aveloss:%10.8f" % (epoch, epoch_num, minibatch_id, minibatch_num, loss, expAveLoss, aveLoss))
         loss.backward()  # 反向传播
+        _ = torch.nn.utils.clip_grad_norm_(model.parameters(), 100)  # 限制梯度范数，避免梯度爆炸
         optimizer.step()  # 更新参数
 
     # save model every epoch

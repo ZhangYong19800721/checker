@@ -40,7 +40,7 @@ if __name__ == '__main__':
     input_dim = 28
     hidden_dim = 512
     minibatch_size = 100
-    gru_model = GRU_MODEL(input_dim, hidden_dim, num_layers=2)  # 初始化一个GRU_MODEL的实例
+    gru_model = GRU_MODEL(input_dim, hidden_dim, num_layers=2, dropout=0.1)  # 初始化一个GRU_MODEL的实例
 
     # 加载MNIST训练数据
     trainset = TRAINSET("./data/mnist.mat")
@@ -54,8 +54,11 @@ if __name__ == '__main__':
 
     gru_model.to(device)
     aveloss = []
-    for epoch in range(5):  # 对全部的训练数据进行n次遍历
-        for minibatch_id in range(len(trainset_loader)):
+
+    epoch_num = 20
+    minibatch_num = len(trainset_loader)
+    for epoch in range(epoch_num):  # 对全部的训练数据进行n次遍历
+        for minibatch_id in range(minibatch_num):
             minibatch = trainset_loader[minibatch_id]
             images = minibatch["image"].to(device)
             labels = minibatch["label"].to(device)
@@ -66,8 +69,9 @@ if __name__ == '__main__':
             while len(aveloss) > len(trainset_loader):
                 aveloss.pop(0)
             ave_loss = sum(aveloss) / len(aveloss)
-            print("epoch:%5d, minibatch:%5d, aveloss:%10.8f" % (epoch, minibatch_id, ave_loss))
+            print("epoch:%5d, minibatch:%5d/%d, loss:%10.8f, aveloss:%10.8f" % (epoch, minibatch_id, minibatch_num, loss.item(), ave_loss))
             loss.backward()
+            _ = torch.nn.utils.clip_grad_norm_(gru_model.parameters(), 100)
             optimizer.step()  # Does the update
 
     end_time = time.time()
@@ -76,6 +80,8 @@ if __name__ == '__main__':
     # 加载MNIST测试数据
     testset = TESTSET("./data/mnist.mat")
     testset_loader = DATASET_LOADER(testset, minibatch_size=100)
+
+    gru_model.eval()
 
     error_count = 0
     with torch.no_grad():
