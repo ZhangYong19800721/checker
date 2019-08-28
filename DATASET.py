@@ -1,5 +1,6 @@
 import torch
 import pickle
+import random
 import itertools
 import tools
 import numpy as np
@@ -25,9 +26,21 @@ class GCDYW(object):
 
     def __getitem__(self, idx):
         return self.dataset[idx]
-    
-    def trim(self, minlen = 20, maxlen = 1000):
-        self.dataset = [x for x in self.dataset if minlen<=len(x['article']) and len(x['article'])<=maxlen]
+
+    def trim(self, minlen=20, maxlen=1000):
+        self.dataset = [x for x in self.dataset if minlen <= len(x['article']) and len(x['article']) <= maxlen]
+
+    def balance(self):
+        sample_pos = [x for x in self.dataset if x['label']==1]
+        sample_neg = [x for x in self.dataset if x['label']==0]
+        num_pos = len(sample_pos)
+        num_neg = len(sample_neg)
+        if(num_pos > num_neg):
+            sample_neg *= int(num_pos / num_neg)
+        else:
+            sample_pos *= int(num_neg / num_pos)
+        self.dataset = sample_pos + sample_neg
+        random.shuffle(self.dataset)
 
 
 class LOADER(object):

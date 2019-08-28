@@ -18,11 +18,13 @@ voc = pickle.load(voc_file)
 voc_file.close()
 
 trainset = DATASET.GCDYW(r"./data/corpus_trainset_digit.cps")  # 加载训练数据
+trainset.trim()
+trainset.balance()
 minibatch_size = 20
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
-embedding_dim = 128
-hidden_size = 256
+embedding_dim = 100
+hidden_size = 800
 num_layers = 2
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
@@ -38,7 +40,8 @@ lossList = []
 expAveLoss = 0
 
 minibatch_num = len(dataloader)
-epoch_num = 50
+
+epoch_num = 100
 for epoch in range(epoch_num):
     for minibatch_id in range(minibatch_num):
         minibatch = dataloader[minibatch_id]
@@ -52,7 +55,7 @@ for epoch in range(epoch_num):
             lossList.pop(0)
         expAveLoss = 99 / 100 * expAveLoss + 1 / 100 * loss
         aveLoss = sum(lossList) / len(lossList)  # 计算平均损失函数
-        print("epoch:%5d/%d, minibatch_id:%5d/%d, expAveLoss:%10.8f, aveloss:%10.8f" % (epoch, epoch_num, minibatch_id, minibatch_num, expAveLoss, aveLoss))
+        print("epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, expAveLoss:%10.8f, aveloss:%10.8f" % (epoch, epoch_num, minibatch_id, minibatch_num, loss, expAveLoss, aveLoss))
         loss.backward()  # 反向传播
         optimizer.step()  # 更新参数
 
