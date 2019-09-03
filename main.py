@@ -13,14 +13,16 @@ import pickle
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
 
+log_file = open("log.txt", "w", encoding='utf-8')
+
 voc_file = open(r"./data/vocabulary.voc", "rb")
 voc = pickle.load(voc_file)
 voc_file.close()
 
 trainset = DATASET.GCDYW(r"./data/corpus_trainset_digit.cps")  # 加载训练数据
-trainset.trim()
-trainset.balance()
-minibatch_size = 20
+trainset.trim(20, 500)
+# trainset.balance()
+minibatch_size = 50
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 100
@@ -31,8 +33,15 @@ dropout = 0.1
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
 model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
 
+try:
+    model_pre_file = open(r"./model/model_pre.pkl", "rb")
+    model = pickle.load(model_pre_file)
+except:
+    pass
+
 criterion = nn.CrossEntropyLoss()  # 目标函数CrossEntropy
-optimizer = optim.Adam(model.parameters())  # 准备最优化算法SGD
+optimizer = optim.Adam(model.parameters())  # 准备最优化算法Adam
+# optimizer = optim.SGD(model.parameters(),lr=0.001,momentum=0.9)  # 准备最优化算法SGD
 
 start_time = time.time()
 model.to(device)  # 将模型推入GPU
@@ -41,7 +50,7 @@ lossList = []
 expAveLoss = 0
 
 minibatch_num = len(dataloader)
-
+# minibatch_num = 300
 epoch_num = 100
 for epoch in range(epoch_num):
     for minibatch_id in range(minibatch_num):
@@ -56,7 +65,10 @@ for epoch in range(epoch_num):
             lossList.pop(0)
         expAveLoss = 99 / 100 * expAveLoss + 1 / 100 * loss
         aveLoss = sum(lossList) / len(lossList)  # 计算平均损失函数
-        print("epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, expAveLoss:%10.8f, aveloss:%10.8f" % (epoch, epoch_num, minibatch_id, minibatch_num, loss, expAveLoss, aveLoss))
+        log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, expAveLoss:%10.8f, aveloss:%10.8f" % (
+        epoch, epoch_num, minibatch_id, minibatch_num, loss, expAveLoss, aveLoss)
+        print(log_message)
+        log_file.write(log_message + "\n")
         loss.backward()  # 反向传播
         _ = torch.nn.utils.clip_grad_norm_(model.parameters(), 100)  # 限制梯度范数，避免梯度爆炸
         optimizer.step()  # 更新参数
@@ -67,5 +79,5 @@ for epoch in range(epoch_num):
     model_file.close()
 
 end_time = time.time()
-
+log_file.close()
 print(f'train_time = {(end_time - start_time) / 60} min')

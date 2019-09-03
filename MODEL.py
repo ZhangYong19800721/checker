@@ -17,8 +17,13 @@ class ArticleReviewer(nn.Module):
         # hidden_size，n_layers指定了层数，bidirectional=True指定了采用双向的GRU，
         self.gru = nn.GRU(input_size, hidden_size, self.num_layers, dropout=self.dropout, bidirectional=True)
 
+        self.dropout_fc1 = nn.Dropout(self.dropout)
+        # self.dropout_fc2 = nn.Dropout(self.dropout)
+        self.dropout_fc3 = nn.Dropout(self.dropout)
+
         self.fc1 = nn.Linear(2 * hidden_size, hidden_size)  # gru的输出作为fc1的输入
-        self.fc2 = nn.Linear(hidden_size, 2)  # fc1的输出作为fc2的输入
+        # self.fc2 = nn.Linear(hidden_size, hidden_size)  # gru的输出作为fc1的输入
+        self.fc3 = nn.Linear(hidden_size, 2)  # fc1的输出作为fc2的输入
 
     def forward(self, input_seq, hidden=None):
         # 先将词索引转换为词向量
@@ -30,6 +35,7 @@ class ArticleReviewer(nn.Module):
         outputs_gru = torch.cat((x, y), 1)  # 将正向GRU末端的输出和反向GRU末端的输出拼接起来
 
         # 将GRU的输出送入一个全连接的Softmax判决层
-        outputs = F.relu(self.fc1(outputs_gru))
-        outputs = self.fc2(outputs)
+        outputs = torch.sigmoid(self.fc1(self.dropout_fc1(outputs_gru)))
+        # outputs = torch.relu(self.fc2(self.dropout_fc2(outputs)))
+        outputs = self.fc3(self.dropout_fc3(outputs))
         return outputs
