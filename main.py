@@ -19,7 +19,7 @@ voc_file = open(r"./data/vocabulary.voc", "rb")
 voc = pickle.load(voc_file)
 voc_file.close()
 
-trainset = DATASET.GCDYW(r"./data/corpus_trainset_digit.cps")  # 加载训练数据
+trainset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # 加载训练数据
 trainset.trim(20, 500)
 # trainset.balance()
 minibatch_size = 50
