@@ -36,20 +36,4 @@ trainset_file_part3_digit_file = open(r"./data/corpus_trainset_part3_digit.cps",
 pickle.dump(trainset_part3,trainset_file_part3_digit_file)
 trainset_file_part3_digit_file.close()
 
-# # 读入全部训练集
-# trainset_file = open(r"./data/corpus_trainset.cps", "rb")
-# trainset = pickle.load(trainset_file)
-# trainset_file.close()
-# trainset = tools.transformCorpusToDigit(trainset,voc)
-# trainset_file_digit = open(r"./data/corpus_trainset_digit.cps", "wb")
-# pickle.dump(trainset,trainset_file_digit)
-# trainset_file_digit.close()
-#
-# # 读入全部测试集
-# testset_file = open(r"./data/corpus_testset.cps", "rb")
-# testset = pickle.load(testset_file)
-# testset_file.close()
-# testset = tools.transformCorpusToDigit(testset,voc)
-# testset_file_digit = open(r"./data/corpus_testset_digit.cps", "wb")
-# pickle.dump(testset,testset_file_digit)
-# testset_file_digit.close()
+print("END")

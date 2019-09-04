@@ -537,7 +537,10 @@ def transformCorpusToDigit(corpus, voc):
             label = 0
         else:
             continue
-        digit_corpus.append({"article": article, "label": label})
+        data["article"] = article
+        data["label"] = label
+        data["body"] = data["body"][0:20]
+        digit_corpus.append(data)
     return digit_corpus
 
 
