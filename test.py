@@ -14,7 +14,7 @@ model.eval()
 model_file.close()
 
 testset = DATASET.GCDYW(r"./data/corpus_testset_consistent_rmrepeat_digit.cps")  # load the test data
-testset.trim(20,1000)
+testset.trim(20, 1000)
 minibatch_size = 25
 dataloader = DATASET.LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
 minibatch_num = len(dataloader)
@@ -24,10 +24,13 @@ with torch.no_grad():
     for minibatch_id in range(minibatch_num):
         minibatch = dataloader[minibatch_id]
         article = minibatch['article'].to(device)
-        label = minibatch['label'].numpy()
-        predict = model(article).to('cpu').numpy()
-        predict = np.argmax(predict, axis=1)
-
+        # label = minibatch['label'].numpy()
+        # predict = model(article).to('cpu').numpy()
+        # predict = np.argmax(predict, axis=1)
+        label = minibatch['label'].to('cpu').numpy()
+        predict = model(article).to('cpu')
+        predict = torch.softmax(predict, dim=1).numpy()
+        predict = (predict[:, 1] > 0.5) + 0
         error = (predict != label) + 0
         error_pos = error * (label == 1)
         error_neg = error * (label == 0)
@@ -42,4 +45,4 @@ with torch.no_grad():
         error_pos_rate = error_pos_count / pos_num
         error_neg_rate = error_neg_count / neg_num
         print("minibatch:%5d/%d, 错误率:%10.8f, 正错误率:%10.8f, 反错误率:%10.8f" % (
-        minibatch_id, minibatch_num, error_rate, error_pos_rate, error_neg_rate))
+            minibatch_id, minibatch_num, error_rate, error_pos_rate, error_neg_rate))
