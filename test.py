@@ -44,5 +44,5 @@ with torch.no_grad():
         error_rate = error_count / (pos_num + neg_num)
         error_pos_rate = error_pos_count / pos_num
         error_neg_rate = error_neg_count / neg_num
-        print("minibatch:%5d/%d, 错误率:%10.8f, 正错误率:%10.8f, 反错误率:%10.8f" % (
+        print("minibatch:%5d/%d, ERROR_RATE:%10.8f, POS_ERROR_RATE:%10.8f, NEG_ERROR_RATE:%10.8f" % (
             minibatch_id, minibatch_num, error_rate, error_pos_rate, error_neg_rate))
