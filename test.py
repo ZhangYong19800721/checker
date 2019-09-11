@@ -14,8 +14,8 @@ model.eval()
 model_file.close()
 
 testset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # load the test data
-testset.trim(20, 500)
-minibatch_size = 50
+testset.trim(20, 200)
+minibatch_size = 100
 dataloader = DATASET.LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
 minibatch_num = len(dataloader)
 

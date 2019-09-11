@@ -21,14 +21,14 @@ voc_file.close()
 trainset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # 加载训练数据
 trainset.trim(20, 500)
 trainset.balance()
-minibatch_size = 50
+minibatch_size = 30
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 100
-hidden_size = 1200
+hidden_size = 1800
 num_layers = 2
 dropout = 0.1
-update_period = 1
+update_period = 4
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
 model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
@@ -43,8 +43,8 @@ criterion = nn.CrossEntropyLoss()  # 目标函数CrossEntropy
 optimizer = optim.Adam(model.parameters())  # 准备最优化算法Adam
 # optimizer = optim.SGD(model.parameters(),lr=0.001,momentum=0.9)  # 准备最优化算法SGD
 
-
 model.to(device)  # 将模型推入GPU
+model.train()  # set Dropout layer to train mode
 
 lossList = []
 
