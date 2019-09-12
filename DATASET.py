@@ -17,30 +17,24 @@ class GCDYW(object):
     # transform: 数据预处理
     def __init__(self, filename):
         dataset_file = open(filename, "rb")  # 打开数据集文件
-        self.dataset = pickle.load(dataset_file)  # 使用pickle.load读入数据集
+        dataset = pickle.load(dataset_file)  # 使用pickle.load读入数据集
+        self.pos_set = [x for x in dataset if x['label'] == 1]
+        self.neg_set = [x for x in dataset if x['label'] == 0]
         dataset_file.close()  # 关闭文件
 
     # 返回数据集大小
-    def __len__(self):
-        return len(self.dataset)
+    def getLen(self):
+        return len(self.pos_set), len(self.neg_set)
 
-    def __getitem__(self, idx):
-        return self.dataset[idx]
+    def getPosItem(self, idx):
+        return self.pos_set[idx]
+
+    def getNegItem(self, idx):
+        return self.neg_set[idx]
 
     def trim(self, minlen=20, maxlen=1000):
-        self.dataset = [x for x in self.dataset if minlen <= len(x['article']) and len(x['article']) <= maxlen]
-
-    def balance(self):
-        sample_pos = [x for x in self.dataset if x['label'] == 1]
-        sample_neg = [x for x in self.dataset if x['label'] == 0]
-        num_pos = len(sample_pos)
-        num_neg = len(sample_neg)
-        if num_pos > num_neg:
-            sample_neg *= int(num_pos / num_neg)
-        else:
-            sample_pos *= int(num_neg / num_pos)
-        self.dataset = sample_pos + sample_neg
-        random.shuffle(self.dataset)
+        self.pos_set = [x for x in self.pos_set if minlen <= len(x['article']) and len(x['article']) <= maxlen]
+        self.neg_set = [x for x in self.neg_set if minlen <= len(x['article']) and len(x['article']) <= maxlen]
 
 
 class LOADER(object):
@@ -51,22 +45,26 @@ class LOADER(object):
     def __init__(self, dataset, minibatch_size=100):
         self.dataset = dataset  # 数据集
         self.minibatch_size = minibatch_size  # batch的大小
-        self.minibatch_num = len(self.dataset) // self.minibatch_size  # batch的数量
+        pos_len, neg_len = self.dataset.getLen()
+        self.minibatch_num =  max(pos_len // (self.minibatch_size//2), neg_len // (self.minibatch_size//2))  # batch的数量
 
     def __len__(self):  # 返回batch的数量
         return self.minibatch_num
 
     def __getitem__(self, idx):
-        start, finish = self.minibatch_size * idx, self.minibatch_size * (idx + 1)
+        pos_len, neg_len = self.dataset.getLen()
+        select_pos_id = random.choices(range(pos_len), k=self.minibatch_size // 2)
+        select_neg_id = random.choices(range(neg_len), k=self.minibatch_size // 2)
         minibatch = []
-        for i in range(start, finish):
-            minibatch.append(self.dataset[i])
+        for i in select_pos_id:
+            minibatch.append(self.dataset.getPosItem(i))
+        for i in select_neg_id:
+            minibatch.append(self.dataset.getNegItem(i))
 
         minibatch_article = [x['article'] for x in minibatch]
         minibatch_article = tools.zeroPadding(minibatch_article)  # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
         minibatch_label = [x['label'] for x in minibatch]
 
         minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
-        # minibatch_articlelen = torch.LongTensor(minibatch_articlelen)
         minibatch_label = torch.LongTensor(minibatch_label)
         return {'article': minibatch_article, 'label': minibatch_label}

@@ -19,16 +19,15 @@ voc = pickle.load(voc_file)
 voc_file.close()
 
 trainset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # 加载训练数据
-trainset.trim(20, 500)
-trainset.balance()
-minibatch_size = 30
+trainset.trim(20, 600)
+minibatch_size = 50
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 100
-hidden_size = 1800
-num_layers = 2
-dropout = 0.1
-update_period = 4
+hidden_size = 2000
+num_layers = 1
+dropout = 0
+update_period = 1
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
 model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
