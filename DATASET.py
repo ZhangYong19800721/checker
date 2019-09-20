@@ -18,8 +18,8 @@ class GCDYW(object):
     def __init__(self, filename):
         dataset_file = open(filename, "rb")  # 打开数据集文件
         dataset = pickle.load(dataset_file)  # 使用pickle.load读入数据集
-        self.pos_set = [x for x in dataset if x['label'] == 1]
-        self.neg_set = [x for x in dataset if x['label'] == 0]
+        self.pos_set = [x for x in dataset if x['label'] == 1 or x['label'] == 'pass']
+        self.neg_set = [x for x in dataset if x['label'] == 0 or x['label'] == 'reject']
         dataset_file.close()  # 关闭文件
 
     # 返回数据集大小

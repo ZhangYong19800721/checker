@@ -359,7 +359,8 @@ def readRawData(filename, rowid=None):
         text = removeHTMLtag(text)  # 去除文本中的HTML标签
         text = removeSpecialChar(text)  # 去除一些特殊字符
         info = extractTextInfo(text)  # 从文本中抽取结构化信息
-        print(f"filename = {filename}, rowid = {i}")
+        if i % 1000 == 0:
+            print(f"filename = {filename}, rowid = {i}")
         if info:
             if label == 2 or label == 6:
                 info['label'] = 'pass'  # 标签为2或6表示审核通过
@@ -444,7 +445,7 @@ class Vocabulary:
         self.name = name
         self.trimmed = False
         self.word2index = {"PAD": PAD_token, "SOS": SOS_token, "EOS": EOS_token, "UNKNOWN": UNKNOWN_token}  # 从词到索引的映射
-        self.word2count = {"PAD": 0, "SOS": 0, "EOS": 0, "UNKNOWN": 0}  # 词的计数
+        self.word2count = {"PAD": 10000, "SOS": 10000, "EOS": 10000, "UNKNOWN": 10000}  # 词的计数
         self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNKNOWN_token: "UNKNOWN"}  # 从索引到词的映射
         self.num_words = 4  # 初始词汇量为4个词：PAD, SOS, EOS, UNKNOWN
 
@@ -479,7 +480,7 @@ class Vocabulary:
 
         # 重建词汇表
         self.word2index = {"PAD": PAD_token, "SOS": SOS_token, "EOS": EOS_token, "UNKNOWN": UNKNOWN_token}  # 从词到索引的映射
-        self.word2count = {"PAD": 0, "SOS": 0, "EOS": 0, "UNKNOWN": 0}
+        self.word2count = {"PAD": 10000, "SOS": 10000, "EOS": 10000, "UNKNOWN": 10000}
         self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNKNOWN_token: "UNKNOWN"}  # 从索引到词的映射
         self.num_words = 4  # 初始词汇量为4个词：PAD, SOS, EOS, UNKNOWN
 
@@ -492,10 +493,22 @@ def splitUncommonWord(corpus_data, voc, min_count):
     for x in corpus_data:
         wordList = []
         for word in x['body']:
-            if voc.word2count[word] < min_count and len(word) > 1:
-                wordList += re.split(r"([\W\w])", word)
+            if word in voc.word2count:
+                if voc.word2count[word] < min_count and len(word)>1:
+                    L = re.split(r"([\W\w])", word)
+                    L = [x for x in L if x != ""]
+                    wordList += L
+                else:
+                    wordList.append(word)
             else:
-                wordList.append(word)
+                charList = re.split(r"([\W\w])", word) # 如果不在词表中，直接按字拆分
+                charList = [x for x in charList if x != ""]
+                for c in charList:
+                    if c in voc.word2count:
+                        wordList.append(c)
+                    else:
+                        wordList.append("UNKNOWN")
+
         x['body'] = [x for x in wordList if x != ""]
 
     return corpus_data

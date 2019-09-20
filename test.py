@@ -29,9 +29,6 @@ with torch.no_grad():
     for minibatch_id in range(minibatch_num):
         minibatch = dataloader[minibatch_id]
         article = minibatch['article'].to(device)
-        # label = minibatch['label'].numpy()
-        # predict = model(article).to('cpu').numpy()
-        # predict = np.argmax(predict, axis=1)
         label = minibatch['label'].to('cpu').numpy()
         predict = model(article).to('cpu')
         predict = torch.softmax(predict, dim=1).numpy()
