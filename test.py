@@ -5,6 +5,11 @@ import DATASET
 import torch
 import numpy as np
 
+# 读入词汇表
+vocabulary_file = open(r"./data/vocabulary.voc", "rb")
+voc = pickle.load(vocabulary_file)  # 载入词汇表
+vocabulary_file.close()
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 model_file = open(r"./model/model_final.pkl", "rb")
@@ -14,7 +19,7 @@ model.eval()
 model_file.close()
 
 testset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # load the test data
-testset.trim(20, 200)
+testset.trim(20, 300)
 minibatch_size = 100
 dataloader = DATASET.LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
 minibatch_num = len(dataloader)
@@ -32,6 +37,18 @@ with torch.no_grad():
         predict = torch.softmax(predict, dim=1).numpy()
         predict = (predict[:, 1] > 0.5) + 0
         error = (predict != label) + 0
+
+        for i in range(error.shape[0]):
+            if error[i] == 1:
+                print(f"label = {label[i]}")
+                print(f"predict = {predict[i]}")
+                print(f"filename = {minibatch['filename'][i]}")
+                print(f"row_id = {minibatch['row_id'][i]}")
+                print(f"keywords = {minibatch['keywords'][i]}")
+                text_article = [voc.index2word[n.item()] for n in minibatch['article'][:,i]]
+                print(f"article = {''.join(text_article)}")
+                print("\n\n")
+
         error_pos = error * (label == 1)
         error_neg = error * (label == 0)
 

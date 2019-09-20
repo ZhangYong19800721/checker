@@ -64,7 +64,11 @@ class LOADER(object):
         minibatch_article = [x['article'] for x in minibatch]
         minibatch_article = tools.zeroPadding(minibatch_article)  # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
         minibatch_label = [x['label'] for x in minibatch]
+        minibatch_rowid = [x['row_id'] for x in minibatch]
+        minibatch_filename = [x['filename'] for x in minibatch]
+        minibatch_keywords = [x['keywords'] for x in minibatch]
+
 
         minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
         minibatch_label = torch.LongTensor(minibatch_label)
-        return {'article': minibatch_article, 'label': minibatch_label}
+        return {'article': minibatch_article, 'label': minibatch_label, 'row_id': minibatch_rowid, 'filename': minibatch_filename, 'keywords': minibatch_keywords}
