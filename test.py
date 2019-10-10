@@ -35,16 +35,16 @@ with torch.no_grad():
         predict = (predict[:, 1] > 0.5) + 0
         error = (predict != label) + 0
 
-        for i in range(error.shape[0]):
-            if error[i] == 1:
-                print(f"label = {label[i]}")
-                print(f"predict = {predict[i]}")
-                print(f"filename = {minibatch['filename'][i]}")
-                print(f"row_id = {minibatch['row_id'][i]}")
-                print(f"keywords = {minibatch['keywords'][i]}")
-                text_article = [voc.index2word[n.item()] for n in minibatch['article'][:,i]]
-                print(f"article = {''.join(text_article)}")
-                print("\n\n")
+        # for i in range(error.shape[0]):
+        #     if error[i] == 1:
+        #         print(f"label = {label[i]}")
+        #         print(f"predict = {predict[i]}")
+        #         print(f"filename = {minibatch['filename'][i]}")
+        #         print(f"row_id = {minibatch['row_id'][i]}")
+        #         print(f"keywords = {minibatch['keywords'][i]}")
+        #         text_article = [voc.index2word[n.item()] for n in minibatch['article'][:,i]]
+        #         print(f"article = {''.join(text_article)}")
+        #         print("\n\n")
 
         error_pos = error * (label == 1)
         error_neg = error * (label == 0)

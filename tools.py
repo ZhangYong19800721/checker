@@ -565,50 +565,6 @@ def zeroPadding(L, fillvalue=PAD_token):
     return list(itertools.zip_longest(*L, fillvalue=fillvalue))
 
 
-# L是一个二维矩阵，本函数根据L创建一个mask矩阵，mask矩阵的大小与L相同，
-# L中是PAD_token的位置mask中对应的位置为0，L中不是PAD_token的位置mask中对应的位置为1
-def binaryMask(L, value=PAD_token):
-    m = []
-    for i, seq in enumerate(L):
-        m.append([])
-        for token in seq:
-            if token == value:
-                m[i].append(0)
-            else:
-                m[i].append(1)
-    return m
+def splitList(L, seperate = [0]):
+    return [list(g) for k,g in itertools.groupby(L, lambda x:x in seperate) if not k]
 
-
-# L 是一个句子的二维列表，每一个行代表一篇文章，行方向是时间方向
-# 将多篇文章长度补零后转换为张量返回，同时将每篇文章的长度作为一个张量返回
-def transform2Tensor(L):
-    lengths = torch.tensor([len(article) for article in L])  # 记录每篇文章的长度
-    paddedList = zeroPadding(L)  # 长度不足的补零
-    paddedTensor = torch.tensor(paddedList)
-    return paddedTensor, lengths
-
-
-class EncoderRNN(nn.Module):  # 编码器GRU
-    def __init__(self, hidden_size, embedding, n_layers=1, dropout=0):
-        super(EncoderRNN, self).__init__()
-        self.n_layers = n_layers
-        self.hidden_size = hidden_size
-        self.embedding = embedding
-        # 初始化GRU, 输入维度 和 隐藏维度 都被设定为 hidden_size
-        # 经过词向量（embedding）之后特征的维度等于 hidden_size
-        self.gru = nn.GRU(hidden_size, hidden_size, n_layers, dropout=(0 if n_layers == 1 else dropout),
-                          bidirectional=True)
-
-    def forward(self, input_seq, input_lengths, hidden=None):
-        # 使用词向量将词索引转换为词向量
-        embedded = self.embedding(input_seq)
-        # 将词向量打包
-        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
-        # 让数据正向通过GRU
-        outputs, hidden = self.gru(packed, hidden)
-        # 将输出解包
-        outputs, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs)
-        # 将双向GRU的输出结果加起来
-        outputs = outputs[:, :, :self.hidden_size] + outputs[:, :, self.hidden_size:]
-        # 返回输出值和最终的隐藏状态
-        return outputs, hidden

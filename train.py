@@ -18,19 +18,20 @@ voc_file = open(r"./data/vocabulary.voc", "rb")
 voc = pickle.load(voc_file)
 voc_file.close()
 
-trainset = DATASET.GCDYW(r"./data/corpus_trainset_consistent_rmrepeat_digit.cps")  # 加载训练数据
-trainset.trim(20, 600)
-minibatch_size = 50
+trainset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # 加载训练数据
+trainset.trim(20, 400)
+minibatch_size = 4
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 100
-hidden_size = 2000
+bottleneck_dim = 400
+hidden_size = 1100
 num_layers = 1
 dropout = 0
 update_period = 1
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
-model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
+model = MODEL.ArticleReviewer(embedding_dim, hidden_size, bottleneck_dim, word_embedding, num_layers=num_layers, dropout=dropout)
 
 try:
     model_pre_file = open(r"./model/model_pre.pkl", "rb")
@@ -55,10 +56,11 @@ for epoch in range(epoch_num):
     for minibatch_id in range(minibatch_num):
         minibatch = dataloader[minibatch_id]
         datas = minibatch['article'].to(device)  # 将数据推送到GPU
+        datas_len = minibatch['article_len']
         label = minibatch['label'].to(device)  # 将数据推送到GPU
         if minibatch_id % update_period == 0:
             optimizer.zero_grad()  # 梯度置零
-        model_output = model(datas)
+        model_output = model(datas, datas_len)
         loss = criterion(model_output, label)
         lossList.append(loss)
         while len(lossList) > minibatch_num:
@@ -67,8 +69,8 @@ for epoch in range(epoch_num):
         aveLoss = sum(lossList) / len(lossList)  # 计算平均损失函数
         loss.backward()  # 反向传播
         if minibatch_id % update_period == 0:
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 25)  # 限制梯度范数，避免梯度爆炸
-            log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, shortAveLoss:%10.8f, aveLoss:%10.8f, grad_norm:%10f" % (
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 50)  # 限制梯度范数，避免梯度爆炸
+            log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, shortAveLoss:%10.8f, aveLoss:%10.8f, grad_norm:%20.18f" % (
                 epoch, epoch_num, minibatch_id, minibatch_num, loss, shortAveLoss, aveLoss, grad_norm)
             print(log_message)
             log_file.write(log_message + "\n")
