@@ -26,11 +26,14 @@ class ArticleReviewer(nn.Module):
         self.fc1 = nn.Linear(2 * hidden_size, hidden_size)  # output of gru2 as input of fc1
         self.fc2 = nn.Linear(hidden_size, 2)  #
 
-    def forward(self, input_seq, input_len, hidden=None):
+    def forward(self, input_seq, sentence_len, article_len, hidden=None):
         # 先将词索引转换为词向量
         embedded = self.embedding(input_seq)
         # 将数据送入GRU，并从末端获取输出
-        outputs_gru1, hidden_gru1 = self.gru1(embedded, hidden)
+        packed = torch.nn.utils.rnn.pack_padded_sequence(embedded, sentence_len, enforce_sorted=False)
+        outputs_gru1, hidden_gru1 = self.gru1(packed, hidden)
+        outputs_gru1, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs_gru1)
+		
         x1 = outputs_gru1[-1, :, :self.hidden_size]  # 正向GRU最后的输出
         y1 = outputs_gru1[+0, :, self.hidden_size:]  # 反向GRU最后的输出
         outputs_gru1 = torch.cat((x1, y1), 1)  # 将正向GRU末端的输出和反向GRU末端的输出拼接起来
@@ -38,14 +41,19 @@ class ArticleReviewer(nn.Module):
         outputs_fc0 = torch.sigmoid(self.fc0(self.dropout_fc0(outputs_gru1)))
 
         # divide the outputs_gru1 into sub sequences.
-        outputs_fc0 = list(outputs_fc0.split(input_len, dim=0))
-        max_len = max(input_len)
+        outputs_fc0 = list(outputs_fc0.split(article_len, dim=0))
+        max_len = max(article_len)
         for i in range(len(outputs_fc0)):
             zeropadding = nn.ZeroPad2d((0, 0, 0, max_len - len(outputs_fc0[i])))
             outputs_fc0[i] = zeropadding(outputs_fc0[i])
 
         outputs_fc0 = torch.stack(outputs_fc0, dim=1)
-        outputs_gru2, hidden_gru2 = self.gru2(outputs_fc0, hidden)
+
+        # print(article_len)
+        packed = torch.nn.utils.rnn.pack_padded_sequence(outputs_fc0, article_len, enforce_sorted=False)
+        outputs_gru2, hidden_gru2 = self.gru2(packed, hidden)
+        outputs_gru2, _ = torch.nn.utils.rnn.pad_packed_sequence(outputs_gru2)
+
         x2 = outputs_gru2[-1, :, :self.hidden_size]  # 正向GRU最后的输出
         y2 = outputs_gru2[+0, :, self.hidden_size:]  # 反向GRU最后的输出
         outputs_gru2 = torch.cat((x2, y2), 1)  # 将正向GRU末端的输出和反向GRU末端的输出拼接起来

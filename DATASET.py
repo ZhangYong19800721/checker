@@ -66,11 +66,15 @@ class LOADER(object):
         for i in select_neg_id:
             minibatch.append(self.dataset.getNegItem(i))
 
-        minibatch_article, minibatch_article_len = [], []
+        minibatch_article, minibatch_sentence_len, minibatch_article_len = [], [], []
         for sample in minibatch:
-            sentences = tools.splitList(sample['body'], [voc.word2index["。"], voc.word2index["?"], voc.word2index["!"], voc.word2index["；"], voc.word2index["，"], voc.word2index["SOS"], voc.word2index["EOS"]])
-            #sentences = tools.splitList(sample['body'], [voc.word2index["。"], voc.word2index["SOS"], voc.word2index["EOS"]])
+            sentences = tools.splitList(sample['body'], [voc.word2index["。"], voc.word2index["?"], voc.word2index["!"],
+                                                         voc.word2index["；"], voc.word2index["，"],
+                                                         voc.word2index["SOS"], voc.word2index["EOS"]])
+            if len(sentences)==0: # only puncture mark in the sentence. for example ???????????
+                sentences = [[voc.word2index["内容"], voc.word2index["为"], voc.word2index["空"]]]
             minibatch_article += sentences
+            minibatch_sentence_len += [len(x) for x in sentences]
             minibatch_article_len.append(len(sentences))
 
         # minibatch_article = [x['body'] for x in minibatch]
@@ -82,5 +86,6 @@ class LOADER(object):
 
         minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
         minibatch_label = torch.LongTensor(minibatch_label)
-        return {'article': minibatch_article, 'article_len': minibatch_article_len, 'label': minibatch_label,
-                'row_id': minibatch_rowid, 'filename': minibatch_filename, 'keywords': minibatch_keywords}
+        return {'article': minibatch_article, 'sentence_len': minibatch_sentence_len,
+                'article_len': minibatch_article_len, 'label': minibatch_label,
+                'row_id': minibatch_rowid, 'filename': minibatch_filename}
