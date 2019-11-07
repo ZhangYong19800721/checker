@@ -565,6 +565,4 @@ def zeroPadding(L, fillvalue=PAD_token):
     return list(itertools.zip_longest(*L, fillvalue=fillvalue))
 
 
-def splitList(L, seperate = [0]):
-    return [list(g) for k,g in itertools.groupby(L, lambda x:x in seperate) if not k]
 

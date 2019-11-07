@@ -9,36 +9,43 @@ import DATASET
 import MODEL
 import pickle
 
-# 设定计算设备，当有GPU的时候使用GPU，否则使用CPU
-USE_CUDA = torch.cuda.is_available()
-device = torch.device("cuda" if USE_CUDA else "cpu")
-
-log_file = open("log.txt", "w", encoding='utf-8')
-
+# load the vocabulary
 voc_file = open(r"./data/vocabulary.voc", "rb")
 voc = pickle.load(voc_file)
 voc_file.close()
 
-trainset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # 加载训练数据
-trainset.trim(20, 400)
-minibatch_size = 30
-dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
+# 设定计算设备，当有GPU的时候使用GPU，否则使用CPU
+USE_CUDA = torch.cuda.is_available()
+device = torch.device("cuda" if USE_CUDA else "cpu")
 
-embedding_dim = 50
-bottleneck_dim = 200
-hidden_size = 600
+log_file = open("./log/train_log%s.txt"%time.time(), "w", encoding='utf-8')
+
+trainset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # 加载训练数据
+trainset.trim(20, 1000)
+minibatch_size = 60
+dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
+# dataloader = DATASET.TEST_LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
+
+embedding_dim = 100
+hidden_size = 1400
 num_layers = 1
-dropout = 0
+dropout = 0.05
 update_period = 1
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
-model = MODEL.ArticleReviewer(embedding_dim, hidden_size, bottleneck_dim, word_embedding, num_layers=num_layers, dropout=dropout)
+model = MODEL.ArticleReviewer(embedding_dim, hidden_size, word_embedding, num_layers=num_layers, dropout=dropout)
 
+start_epoch_id = 0
+end_epoch_id = 100
 try:
-    model_pre_file = open(r"./model/model_pre.pkl", "rb")
+    model_pre_file_name = r"./model/model%03d.pkl"%(start_epoch_id-1)
+    model_pre_file = open(model_pre_file_name, "rb")
     model = pickle.load(model_pre_file)
+    if start_epoch_id > 0:
+        print("加载上一次的模型", model_pre_file_name)
 except:
-    pass
+    if start_epoch_id > 0:
+        print("无法加载上一次的模型，将重新开始训练！")
 
 criterion = nn.CrossEntropyLoss()  # 目标函数CrossEntropy
 optimizer = optim.Adam(model.parameters())  # 准备最优化算法Adam
@@ -51,18 +58,16 @@ lossList = []
 
 minibatch_num = len(dataloader)
 # minibatch_num = 300
-epoch_num = 100
-for epoch in range(epoch_num):
+
+for epoch in range(start_epoch_id, end_epoch_id):
     start_time = time.time()
-    for minibatch_id in range(minibatch_num):
+    optimizer.zero_grad()  # 梯度置零
+    for minibatch_id in range(1, minibatch_num+1):
         minibatch = dataloader[minibatch_id]
-        datas = minibatch['article'].to(device)  # 将数据推送到GPU
-        sentence_len = minibatch['sentence_len']
+        article = minibatch['article'].to(device)  # 将数据推送到GPU
         article_len = minibatch['article_len']
         label = minibatch['label'].to(device)  # 将数据推送到GPU
-        if minibatch_id % update_period == 0:
-            optimizer.zero_grad()  # 梯度置零
-        model_output = model(datas, sentence_len, article_len)
+        model_output = model(article, article_len)
         loss = criterion(model_output, label)
         lossList.append(loss)
         while len(lossList) > minibatch_num:
@@ -70,16 +75,22 @@ for epoch in range(epoch_num):
         shortAveLoss = sum(lossList[-100:]) / min(len(lossList), 100)
         aveLoss = sum(lossList) / len(lossList)  # 计算平均损失函数
         loss.backward()  # 反向传播
+
         if minibatch_id % update_period == 0:
-            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 100)  # 限制梯度范数，避免梯度爆炸
-            log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, shortAveLoss:%10.8f, aveLoss:%10.8f, grad_norm:%20.18f" % (
-                epoch, epoch_num, minibatch_id, minibatch_num, loss, shortAveLoss, aveLoss, grad_norm)
+            grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 50)  # 限制梯度范数，避免梯度爆炸
+            log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f, shortAveLoss:%10.8f, aveLoss:%10.8f, grad_norm:%10f, time:%10d" % (
+                epoch, end_epoch_id, minibatch_id, minibatch_num, loss, shortAveLoss, aveLoss, grad_norm, int(time.time() - start_time))
             print(log_message)
             log_file.write(log_message + "\n")
             if math.isnan(grad_norm):
                 pass
             else:
                 optimizer.step()  # 更新参数
+            optimizer.zero_grad()  # 梯度置零
+        else:
+            log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f" % (
+                epoch, end_epoch_id, minibatch_id, minibatch_num, loss)
+            print(log_message)
 
     # save model every epoch
     model_file = open(r"./model/model%03d.pkl" % epoch, "wb")

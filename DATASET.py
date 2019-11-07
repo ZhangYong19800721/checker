@@ -5,10 +5,6 @@ import itertools
 import tools
 import numpy as np
 
-voc_file = open(r"./data/vocabulary.voc", "rb")
-voc = pickle.load(voc_file)
-voc_file.close()
-
 
 class GCDYW(object):
     """
@@ -50,8 +46,7 @@ class LOADER(object):
         self.dataset = dataset  # 数据集
         self.minibatch_size = minibatch_size  # batch的大小
         pos_len, neg_len = self.dataset.getLen()
-        self.minibatch_num = max(pos_len // (self.minibatch_size // 2),
-                                 neg_len // (self.minibatch_size // 2))  # batch的数量
+        self.minibatch_num =  max(pos_len // (self.minibatch_size//2), neg_len // (self.minibatch_size//2))  # batch的数量
 
     def __len__(self):  # 返回batch的数量
         return self.minibatch_num
@@ -66,18 +61,40 @@ class LOADER(object):
         for i in select_neg_id:
             minibatch.append(self.dataset.getNegItem(i))
 
-        minibatch_article, minibatch_sentence_len, minibatch_article_len = [], [], []
-        for sample in minibatch:
-            sentences = tools.splitList(sample['body'], [voc.word2index["。"], voc.word2index["?"], voc.word2index["!"],
-                                                         voc.word2index["；"], voc.word2index["，"],
-                                                         voc.word2index["SOS"], voc.word2index["EOS"]])
-            if len(sentences)==0: # only puncture mark in the sentence. for example ???????????
-                sentences = [[voc.word2index["内容"], voc.word2index["为"], voc.word2index["空"]]]
-            minibatch_article += sentences
-            minibatch_sentence_len += [len(x) for x in sentences]
-            minibatch_article_len.append(len(sentences))
+        minibatch_article = [x['body'] for x in minibatch]
+        minibatch_article_len = [len(x) for x in minibatch_article]
+        minibatch_article = tools.zeroPadding(minibatch_article)  # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
+        minibatch_label = [x['label'] for x in minibatch]
+        minibatch_rowid = [x['row_id'] for x in minibatch]
+        minibatch_filename = [x['filename'] for x in minibatch]
+        minibatch_keywords = [x['keywords'] for x in minibatch]
 
-        # minibatch_article = [x['body'] for x in minibatch]
+
+        minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
+        minibatch_label = torch.LongTensor(minibatch_label)
+        return {'article': minibatch_article, 'article_len': minibatch_article_len, 'label': minibatch_label, 'row_id': minibatch_rowid, 'filename': minibatch_filename, 'keywords': minibatch_keywords}
+
+class TEST_LOADER(object):
+    """
+    测试数据加载器
+    """
+
+    def __init__(self, dataset, minibatch_size=100):
+        self.dataset = dataset.pos_set + dataset.neg_set  # 数据集
+        self.minibatch_size = minibatch_size  # batch的大小
+        self.minibatch_num =  len(self.dataset) // self.minibatch_size  # batch的数量
+        # random.shuffle(self.dataset)
+        self.dataset.sort(key=lambda x: -len(x['body']))
+
+    def __len__(self):  # 返回batch的数量
+        return self.minibatch_num
+
+    def __getitem__(self, idx):
+        idx = idx % self.minibatch_num
+        minibatch = self.dataset[(idx * self.minibatch_size) : ((idx+1) * self.minibatch_size)]
+
+        minibatch_article = [x['body'] for x in minibatch]
+        minibatch_article_len = [len(x) for x in minibatch_article]
         minibatch_article = tools.zeroPadding(minibatch_article)  # 较短的序列补零，调整时间方向为列方向，每一列表示一个数据样本
         minibatch_label = [x['label'] for x in minibatch]
         minibatch_rowid = [x['row_id'] for x in minibatch]
@@ -86,6 +103,4 @@ class LOADER(object):
 
         minibatch_article = torch.LongTensor(minibatch_article)  # 将列表转换为张量
         minibatch_label = torch.LongTensor(minibatch_label)
-        return {'article': minibatch_article, 'sentence_len': minibatch_sentence_len,
-                'article_len': minibatch_article_len, 'label': minibatch_label,
-                'row_id': minibatch_rowid, 'filename': minibatch_filename}
+        return {'article': minibatch_article, 'article_len': minibatch_article_len, 'label': minibatch_label, 'row_id': minibatch_rowid, 'filename': minibatch_filename, 'keywords': minibatch_keywords}
