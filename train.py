@@ -8,6 +8,9 @@ import torch.optim as optim
 import DATASET
 import MODEL
 import pickle
+from torch.utils.tensorboard import SummaryWriter
+
+writer = SummaryWriter("./runs/training")
 
 # load the vocabulary
 voc_file = open(r"./data/vocabulary.voc", "rb")
@@ -27,9 +30,9 @@ dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据�
 # dataloader = DATASET.TEST_LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
 embedding_dim = 100
-hidden_size = 1400
+hidden_size = 1500
 num_layers = 1
-dropout = 0.05
+dropout = 0.1
 update_period = 1
 
 word_embedding = nn.Embedding(voc.num_words, embedding_dim)  # 初始化词向量
@@ -67,7 +70,7 @@ for epoch in range(start_epoch_id, end_epoch_id):
         article = minibatch['article'].to(device)  # 将数据推送到GPU
         article_len = minibatch['article_len']
         label = minibatch['label'].to(device)  # 将数据推送到GPU
-        model_output = model(article, article_len)
+        model_output, prob = model(article, article_len)
         loss = criterion(model_output, label)
         lossList.append(loss)
         while len(lossList) > minibatch_num:
@@ -91,6 +94,13 @@ for epoch in range(start_epoch_id, end_epoch_id):
             log_message = "epoch:%5d/%d, minibatch_id:%5d/%d, loss:%10.8f" % (
                 epoch, end_epoch_id, minibatch_id, minibatch_num, loss)
             print(log_message)
+
+        writer.add_scalar("CurrentLoss", loss.item(), epoch * minibatch_num + minibatch_id)
+        writer.add_scalar("ShortAveLoss", shortAveLoss.item(), epoch * minibatch_num + minibatch_id)
+        writer.add_scalar("LongAveLoss", aveLoss.item(), epoch * minibatch_num + minibatch_id)
+
+    log_file.flush()
+    writer.flush()
 
     # save model every epoch
     model_file = open(r"./model/model%03d.pkl" % epoch, "wb")

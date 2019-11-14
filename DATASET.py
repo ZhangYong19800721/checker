@@ -46,15 +46,15 @@ class LOADER(object):
         self.dataset = dataset  # 数据集
         self.minibatch_size = minibatch_size  # batch的大小
         pos_len, neg_len = self.dataset.getLen()
-        self.minibatch_num =  max(pos_len // (self.minibatch_size//2), neg_len // (self.minibatch_size//2))  # batch的数量
+        self.minibatch_num =  max(pos_len // int(self.minibatch_size * 0.85), neg_len // int(self.minibatch_size * 0.15))  # batch的数量
 
     def __len__(self):  # 返回batch的数量
         return self.minibatch_num
 
     def __getitem__(self, idx):
         pos_len, neg_len = self.dataset.getLen()
-        select_pos_id = random.choices(range(pos_len), k=self.minibatch_size // 2)
-        select_neg_id = random.choices(range(neg_len), k=self.minibatch_size // 2)
+        select_pos_id = random.choices(range(pos_len), k=int(self.minibatch_size * 0.85))
+        select_neg_id = random.choices(range(neg_len), k=int(self.minibatch_size * 0.15))
         minibatch = []
         for i in select_pos_id:
             minibatch.append(self.dataset.getPosItem(i))

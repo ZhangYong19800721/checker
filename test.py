@@ -12,7 +12,7 @@ vocabulary_file.close()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-model_file = open(r"./model/model017.pkl", "rb")
+model_file = open(r"./model/model001.pkl", "rb")
 model = pickle.load(model_file)
 model.to(device)
 model.eval()
@@ -33,7 +33,8 @@ with torch.no_grad():
         article = minibatch['article'].to(device)
         article_len = minibatch['article_len']
         label = minibatch['label'].to('cpu').numpy()
-        predict = model(article, article_len).to('cpu')
+        predict, score = model(article, article_len)
+        predict, score = predict.to('cpu'), score.to('cpu')
         predict = torch.softmax(predict, dim=1).numpy()
         predict = (predict[:, 1] > 0.5) + 0
         error = (predict != label) + 0
@@ -46,8 +47,11 @@ with torch.no_grad():
                 testlog_file.write(f"row_id = {minibatch['row_id'][i]}\n")
                 testlog_file.write(f"keywords = {minibatch['keywords'][i]}\n")
                 text_article = [voc.index2word[n.item()] for n in minibatch['article'][:,i]]
-                testlog_file.write(f"article = {''.join(text_article)}\n")
+                text_article_prob = [(text_article[n], score[n][i].item()) for n in range(len(text_article))]
+                # testlog_file.write(f"article = {''.join(text_article)}\n")
+                testlog_file.write(f"article = {text_article_prob}\n")
                 testlog_file.write("\n\n")
+                testlog_file.flush()
 
         error_pos = error * (label == 1)
         error_neg = error * (label == 0)
