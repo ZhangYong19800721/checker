@@ -25,7 +25,7 @@ log_file = open("./log/train_log%s.txt"%time.time(), "w", encoding='utf-8')
 
 trainset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # 加载训练数据
 trainset.trim(20, 1000)
-minibatch_size = 60
+minibatch_size = 50
 dataloader = DATASET.LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 # dataloader = DATASET.TEST_LOADER(trainset, minibatch_size=minibatch_size)  # 数据加载器，设定minibatch的大小
 
@@ -60,7 +60,7 @@ model.train()  # set Dropout layer to train mode
 lossList = []
 
 minibatch_num = len(dataloader)
-# minibatch_num = 300
+# minibatch_num = 10
 
 for epoch in range(start_epoch_id, end_epoch_id):
     start_time = time.time()

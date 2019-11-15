@@ -3,6 +3,7 @@
 import pickle
 import DATASET
 import torch
+import tools
 import numpy as np
 
 # ¶ÁÈë´Ê»ã±í
@@ -22,7 +23,7 @@ testlog_file = open("testlog.txt", "w", encoding='utf-8')
 
 testset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # load the test data
 testset.trim(20, 1000)
-minibatch_size = 30
+minibatch_size = 60
 dataloader = DATASET.TEST_LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
 minibatch_num = len(dataloader)
 
@@ -38,6 +39,18 @@ with torch.no_grad():
         predict = torch.softmax(predict, dim=1).numpy()
         predict = (predict[:, 1] > 0.5) + 0
         error = (predict != label) + 0
+
+        for i in range(error.shape[0]):
+            if label[i] == 0:
+                print(f"label = {label[i]}")
+                print(f"predict = {predict[i]}")
+                print(f"filename = {minibatch['filename'][i]}")
+                print(f"row_id = {minibatch['row_id'][i]}")
+                print(f"keywords = {minibatch['keywords'][i]}")
+                text_article = [voc.index2word[n.item()] for n in minibatch['article'][:, i]]
+                text_article_prob = [(text_article[n], score[n][i].item()) for n in range(len(text_article))]
+                tools.printColorAriticle(text_article_prob)
+                print()
 
         for i in range(error.shape[0]):
             if error[i] == 1:
