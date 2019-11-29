@@ -94,9 +94,9 @@ testset = corpus[int(0.8 * len(corpus)):]  # 20%的数据作为测试集
 # 建词汇表
 print("establish vocabulary ... ")
 voc = tools.establishVocabulary(trainset, "党员网语料库词汇表")  # 第1次建词汇表
-trainset = tools.splitUncommonWord(trainset, voc, 10)  # 如果一个多字词的出现次数少于10次，将它拆分为单字词
+trainset = tools.splitUncommonWord(trainset, voc, 5)  # 如果一个多字词的出现次数少于5次，将它拆分为单字词
 voc = tools.establishVocabulary(trainset, "党员网语料库词汇表")  # 第2次建词汇表
-voc.trim(10)  # 去掉出现次数少于10次的词
+voc.trim(5)  # 去掉出现次数少于5次的词
 print("DONE!")
 
 # 保存词汇表
@@ -132,7 +132,7 @@ for n in range(len(trainset)):
 
 # 将测试集转换为数字形式
 print("transform testset to digit... ")
-testset = tools.splitUncommonWord(testset, voc, 10)  # 如果一个多字词的出现次数少于10次，将它拆分为单字词
+testset = tools.splitUnknownWord(testset, voc)  # 如果一个多字词从未在词表中出现，先将它拆分为单字词
 for n in range(len(testset)):
     if n % 1000 == 0:
         print(f"transform testset sample {n} to digit form")

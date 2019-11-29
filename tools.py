@@ -488,6 +488,27 @@ class Vocabulary:
             self.addWord(word)
 
 
+# 将语料库中从未在词表中出现的多字词切分为单字词
+def splitUnknownWord(corpus_data, voc):
+    for x in corpus_data:
+        wordList = []
+        for word in x['body']:
+            if word in voc.word2count:
+                wordList.append(word)
+            elif len(word) > 1:
+                L = re.split(r"([\W\w])", word)
+                L = [x for x in L if x != ""]
+                for c in L:
+                    if c in voc.word2count:
+                        wordList.append(c)
+                    else:
+                        wordList.append("UNKNOWN")
+            else:
+                wordList.append("UNKNOWN")
+        x['body'] = [x for x in wordList if x != ""]
+
+    return corpus_data
+
 # 将语料库中出现次数低于min_count的多字词拆分为单字词
 def splitUncommonWord(corpus_data, voc, min_count):
     for x in corpus_data:

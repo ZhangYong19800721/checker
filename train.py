@@ -57,7 +57,6 @@ model.train()  # set Dropout layer to train mode
 shortAveLoss,longAveLoss = None,None
 
 minibatch_num = len(dataloader)
-# minibatch_num = 10
 
 for epoch in range(start_epoch_id, end_epoch_id):
     start_time = time.time()
