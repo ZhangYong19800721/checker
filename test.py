@@ -13,7 +13,7 @@ vocabulary_file.close()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-model_file = open(r"./model/model001.pkl", "rb")
+model_file = open(r"./model/model004.pkl", "rb")
 model = pickle.load(model_file)
 model.to(device)
 model.eval()
@@ -23,7 +23,7 @@ testlog_file = open("testlog.txt", "w", encoding='utf-8')
 
 testset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # load the test data
 testset.trim(20, 1000)
-minibatch_size = 60
+minibatch_size = 120
 dataloader = DATASET.TEST_LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
 minibatch_num = len(dataloader)
 
@@ -41,7 +41,7 @@ with torch.no_grad():
         error = (predict != label) + 0
 
         for i in range(error.shape[0]):
-            if label[i] == 0:
+            if label[i] == 0 or (error[i] == 1 and label[i] == 1):
                 print(f"label = {label[i]}")
                 print(f"predict = {predict[i]}")
                 print(f"filename = {minibatch['filename'][i]}")

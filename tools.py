@@ -567,22 +567,23 @@ def zeroPadding(L, fillvalue=PAD_token):
 
 def printColorAriticle(article):
     color = ['\033[37m','\033[30m','\033[36m','\033[33m','\033[32m','\033[34m','\033[35m','\033[31m']
+    ave_value = 1 / len(article)
     for x in article:
-        if x[1] <= 1/8:
+        if x[1] <= 1 * ave_value:
             print(color[0] + x[0],end='')
-        elif x[1] <= 2/8:
+        elif x[1] <= 2 * ave_value:
             print(color[1] + x[0], end='')
-        elif x[1] <= 3/8:
+        elif x[1] <= 3 * ave_value:
             print(color[2] + x[0], end='')
-        elif x[1] <= 4/8:
+        elif x[1] <= 4 * ave_value:
             print(color[3] + x[0], end='')
-        elif x[1] <= 5/8:
+        elif x[1] <= 5 * ave_value:
             print(color[4] + x[0], end='')
-        elif x[1] <= 6/8:
+        elif x[1] <= 6 * ave_value:
             print(color[5] + x[0], end='')
-        elif x[1] <= 7/8:
+        elif x[1] <= 7 * ave_value:
             print(color[6] + x[0], end='')
-        elif x[1] <= 8/8:
+        else:
             print(color[7] + x[0], end='')
     print()
 
