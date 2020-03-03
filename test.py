@@ -21,7 +21,7 @@ model_file.close()
 
 testlog_file = open("testlog.txt", "w", encoding='utf-8')
 
-testset = DATASET.GCDYW(r"./data/trainset_digit.cps")  # load the test data
+testset = DATASET.GCDYW(r"./data/testset_digit.cps")  # load the test data
 testset.trim(20, 1000)
 minibatch_size = 120
 dataloader = DATASET.TEST_LOADER(testset, minibatch_size=minibatch_size)  # set the minibatch size
