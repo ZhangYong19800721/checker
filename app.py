@@ -4,7 +4,7 @@ import pickle
 import torch
 import pyltp
 import tools
-import numpy as np
+import re
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
@@ -33,6 +33,26 @@ segmentor = pyltp.Segmentor()
 segmentor.load_with_lexicon(model_path, user_dict)
 
 ##########################################################################
+## 将article从未在词表中出现的多字词切分为单字词
+def splitUnknownWord(article, voc):
+    wordList = []
+    for word in article:
+        if word in voc.word2count:
+            wordList.append(word)
+        elif len(word) > 1:
+            L = re.split(r"([\W\w])", word)
+            L = [x for x in L if x != ""]
+            for c in L:
+                if c in voc.word2count:
+                    wordList.append(c)
+                else:
+                    wordList.append("UNKNOWN")
+        else:
+            wordList.append("UNKNOWN")
+    article = [x for x in wordList if x != ""]
+    return article
+
+##########################################################################
 ## preprocess to normalize the html content
 def preprocess(article): # preprocess the raw article represented as a html file
     article = tools.removeHTMLtag(article)  # 去除文本中的HTML标签
@@ -47,14 +67,13 @@ def preprocess(article): # preprocess the raw article represented as a html file
     info['body'] = tools.segmentRefine_Digit(info['body'])  # 对数字进行更多的处理
     info['body'] = tools.segmentRefine_English(info['body'])  # 对英文进行更多的处理
     info['body'] = ['SOS'] + [x for x in info['body'] if x != ""] + ['EOS']
+    info['body'] = splitUnknownWord(info['body'], voc)
     return info
 
 ##########################################################################
 ## get the prediction result and score value.
 ## the input parameter article is a list of chinese word (the result of chinese words segmentation).
 def get_prediction(article):
-    # testset = tools.splitUncommonWord(testset, voc, 10)  # 如果一个多字词的出现次数少于10次，将它拆分为单字词
-
     article_digit = []  # we want to map the article to digit list and stored here
     for word in article:
         if word in voc.word2index:
@@ -62,23 +81,57 @@ def get_prediction(article):
         else:
             article_digit.append(voc.word2index["UNKNOWN"])
 
-    # transform article_digit to tensor
 
-    predict_label = 1
-    predict_score = [('一个',1.1), ('is',2.1), ('a',3.1), ('pig',4.1)]
-    return predict_label, predict_score
+    # transform article_digit to tensor
+    article_len = len(article_digit)
+    # print('article_len = ', article_len)
+    article_digit = tools.zeroPadding([article_digit, article_digit])
+    article_tensor = torch.LongTensor(article_digit)  # 将列表转换为张量
+    article_tensor = article_tensor.to(device)
+
+    with torch.no_grad():
+        predict_label, predict_score = model(article_tensor, [article_len, article_len])
+        predict_label, predict_score = predict_label.to('cpu'), predict_score.to('cpu')
+        predict_label = torch.softmax(predict_label, dim=1).numpy()
+        predict_label = (predict_label[:, 1] > 0.5) + 0
+
+    predict_label = int(predict_label[0]) # change the int64 to int32, or else can not be jsonify.
+    predict_score = predict_score[:,0].numpy() # this is a tensor, we need to change it to numpy array
+    average_score = 1 / article_len
+    score = []
+    for i in range(article_len):
+        if predict_score[i] <= 1 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 1))
+        elif predict_score[i] <= 2 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 2))
+        elif predict_score[i] <= 3 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 3))
+        elif predict_score[i] <= 4 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 4))
+        elif predict_score[i] <= 5 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 5))
+        elif predict_score[i] <= 6 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 6))
+        elif predict_score[i] <= 7 * average_score:
+            score.append((voc.index2word[article_digit[i][0]], 7))
+        else:
+            score.append((voc.index2word[article_digit[i][0]], 8))
+    # print("score = ", score)
+    return predict_label, score
 
 @app.route('/predict', methods=['POST'])
 def predict():
     if request.method == 'POST':
         file = request.files['file']
-        article = file.read() # read the article, it is stored as an html file
-        #
-
-        predict_label, predict_score = get_prediction(article=article)
-        return jsonify({"predict_label" : predict_label, 'predict_score' : predict_score})
+        article = file.read() # read the article, it is stored as an txt file
+        article = article.decode('utf-8')
+        article = preprocess(article)
+        # print("After preprocessing.......\n", article['body'])
+        predict_label, predict_score = get_prediction(article=article['body'])
+        return jsonify({"predict_label" : predict_label, "predict_score" : predict_score})
 
 if __name__ == "__main__":
     text = """标题：发展壮大村集体经济 开启乡村振兴新征程<br/>主题：<div align="left">&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <font size="5">壮大农村集体经济，是增强基层党组织创造力、凝聚力和战斗力的现实需要，不断壮大村集体经济是新时代的要求也是踏上新征程的有力保障。凤城市弟兄山镇结合当地实际，解放思想，真抓实干，不断探索集体经济模式，走出了发展壮大农村集体经济的广阔天地。</font></div><div align="left">&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <font size="5"><strong>聚焦问题补齐短板，解放思想破解难题。</strong>弟兄山位于凤城北部，是一个具有矿产资源的工业小镇，农业相对落后。过去，该镇8个行政村，均没有集体收入来源，属于典型的空壳村。按照上级要求，三年全部脱壳难度极大。为切实改变这一现状，该镇党政领导敢于直面问题，解放制约村集体发展的旧思想，大胆探索，多次到东港市及凤城南部乡镇实地考察，通过集思广益、分析研判、反复论证后，确定以反季节蓝莓种植项目带动村集体经济壮大发展，并采取“飞地”模式“抱团”集中经营发展。运用“飞地经济”模式降低了发展农村集体经济的自然风险和市场风险，有效破解了村集体经济发展难题。</font></div><div align="left">&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <font size="5"><strong>强化党建引领作用，压实压紧工作责任。</strong>将村集体经济工作列入年度基层党建专项述职评议考核的重要内容，通过召开专题研讨会，研究壮大村集体经济可行性方案，解决突出问题，强化组织领导，明确工作责任。同时，组建发展壮大村集体经济领导小组，负责指导各村发展村集体经济，统筹经管、财政、农业等成员单位，从前期设计、投审、招投标至中期工程质量监督、水电路基础设施配套，到后期大棚招租、工程结算等环节全面严格把关，落实工作任务，加强沟通协调，形成工作合力，为实现“清零”目标提供有力的组织保障。</font></div><div align="left">&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <font size="5"><strong>积极向上争取资金，全面提升发展动力。</strong>该镇把争取项目资金支持作为发展壮大村集体经济的原动力，用项目资金撬动村级集体经济发展。2018年向上级争取到4个村扶持资金200万元，选择在东兴村一块土壤肥沃、交通便利的土地上，联合建设标准化大棚12个，总占地60亩，作为固定资产投资。引进鑫盛蓝莓公司以经营资金投入和技术作为投资合作，通过上纳租金承包大棚的形式进行生产经营，第一年4个村均已得到5万元的租金，实现了脱壳。2019年，又争取到2个村扶持资金75万，计划继续以此模式建设大棚，今年年底可顺利消除6个空壳村。</font></div><div align="left">&nbsp; &nbsp;&nbsp; &nbsp;&nbsp; &nbsp; <font size="5"><strong>乡村振兴指日可待，美好生活未来可期。</strong>按照项目规划，将温室大棚建设向集群、规模化方向发展，实施后将会产生广泛的带动效应。以蓝莓种植园为中心，带动周边各村100余个已建大棚统一规范化种植。同时，该镇将分期建设种植园，反季节蓝莓种植大棚将逐步达到150个左右，初步形成规模。除可以壮大集体经济外，还将解决周边群众百余人就业。至此，该镇将告别单一传统种植业，开启乡村振兴新征程，力争走出一条新时代弟兄山特色农业现代化新路。</font></div><br/> 发稿人信息：<br/>姓名：赫星硕<br/>单位：弟兄山镇<br />邮箱：hxs0415@163.com<br />手机号：15714157111"""
     info = preprocess(text)
-    print(info)
+    label, score = get_prediction(info['body'])
+    print(label,score)

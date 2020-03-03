@@ -588,6 +588,7 @@ def zeroPadding(L, fillvalue=PAD_token):
 
 def printColorAriticle(article):
     color = ['\033[37m','\033[30m','\033[36m','\033[33m','\033[32m','\033[34m','\033[35m','\033[31m']
+             # grey      black       qing       yellow     green     blue        manite     red
     ave_value = 1 / len(article)
     for x in article:
         if x[1] <= 1 * ave_value:
