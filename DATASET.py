@@ -75,6 +75,8 @@ class LOADER(object):
         return {'article': minibatch_article, 'article_len': minibatch_article_len, 'label': minibatch_label, 'row_id': minibatch_rowid, 'filename': minibatch_filename, 'keywords': minibatch_keywords}
 
 class TEST_LOADER(object):
+
+
     """
     测试数据加载器
     """
